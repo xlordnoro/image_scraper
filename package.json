@@ -1,0 +1,14 @@
+{
+  "name": "donation_banner_scraper",
+  "version": "1.0.0",
+  "description": "image_scrapper",
+  "main": "Mass_add.js",
+  "scripts": {
+    "test": "node ."
+  },
+  "author": "xlordnoro",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^21.6.0"
+  }
+}
