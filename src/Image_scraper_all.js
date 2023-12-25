@@ -32,7 +32,7 @@ async function scrapeAllPosts() {
   while (hasNextPage) {
     // Navigate to the specified URL containing your posts
     console.log(`Navigating to posts page - Page ${currentPage}...`);
-    await page.goto(`https://hi10anime.com/archives/author/zangetu/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`https://hi10anime.com/archives/author/kami-samacrosser/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
     console.log('Waiting for posts page to load...');
@@ -82,7 +82,7 @@ async function processPost(browser, page, postLink, errorLogStream) {
   console.log('Waiting for post page to load...');
 
   const selectors = [
-    { selector: 'a.coverImage img, img.aligncenter, p.image img', folder: 'cover_images', fileName: 'cover.jpg' },
+    { selector: 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img', folder: 'cover_images', fileName: 'cover.jpg' },
     { selector: 'div.button_code img', folder: 'button_images', fileName: 'button.jpg' },
     { selector: 'a.donateImage img, p.donation img', folder: 'donation_images', fileName: 'donation.jpg' }
   ];
@@ -106,6 +106,9 @@ async function processPost(browser, page, postLink, errorLogStream) {
       console.warn(`No images found for post ${postLink}, selector: ${selector}`);
     }
   }
+
+  // Handle spoilerContainer images separately
+  await downloadSpoilerImages(page, postPage, 'button_images');
 
   await postPage.close();
 }
@@ -133,6 +136,26 @@ async function downloadDonationImages(page, postPage, selector, folder) {
   }
 }
 
+async function downloadSpoilerImages(page, postPage, folder) {
+  const spoilerImages = await postPage.$$eval('.spoilerContainer img', imgs => imgs.map(img => ({ src: img.src, id: img.parentElement.id })));
+
+  if (spoilerImages.length > 0) {
+    try {
+      console.log('Extracting and downloading spoilerContainer images...');
+      for (const image of spoilerImages) {
+        const imageName = getSpoilerFileName(image.id) || 'unknown.jpg';
+        await downloadImageHelper(page, image.src, folder, postPage.url(), imageName);
+      }
+    } catch (error) {
+      const errorMessage = `Error processing spoilerContainer images for post: ${error.message}\n`;
+      console.error(errorMessage);
+      errorLogStream.write(errorMessage);
+    }
+  } else {
+    console.warn('No spoilerContainer images found for post.');
+  }
+}
+
 function getButtonFileName(buttonId) {
   switch (buttonId) {
     case 'bd1080':
@@ -141,6 +164,17 @@ function getButtonFileName(buttonId) {
       return 'bd720.jpg';
     case 'movie':
       return 'movie.jpg';
+    default:
+      return null;
+  }
+}
+
+function getSpoilerFileName(spoilerId) {
+  switch (spoilerId) {
+    case 'btnS1':
+      return 'bd1080.jpg';
+    case 'btnS2':
+      return 'bd720.jpg';
     default:
       return null;
   }
