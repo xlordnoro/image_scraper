@@ -21,7 +21,7 @@ async function scrapeAllPosts() {
   await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(5000);
 
-  // Start from the first page
+  // Start from the specified page
   let currentPage = 1;
   let hasNextPage = true;
 
@@ -32,7 +32,7 @@ async function scrapeAllPosts() {
   while (hasNextPage) {
     // Navigate to the specified URL containing your posts
     console.log(`Navigating to posts page - Page ${currentPage}...`);
-    await page.goto(`https://hi10anime.com/archives/author/kami-samacrosser/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`https://hi10anime.com/archives/author/playcool/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
     console.log('Waiting for posts page to load...');
@@ -81,33 +81,30 @@ async function processPost(browser, page, postLink, errorLogStream) {
 
   console.log('Waiting for post page to load...');
 
-  const selectors = [
-    { selector: 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img', folder: 'cover_images', fileName: 'cover.jpg' },
-    { selector: 'div.button_code img', folder: 'button_images', fileName: 'button.jpg' },
-    { selector: 'a.donateImage img, p.donation img', folder: 'donation_images', fileName: 'donation.jpg' }
-  ];
+  const coverImageSelector = 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img';
+  const coverImageFolder = 'cover_images';
 
-  for (const { selector, folder, fileName } of selectors) {
-    const images = await postPage.$$eval(selector, imgs => imgs.map(img => ({ src: img.src, id: img.parentElement.id })));
+  // Extract cover images using page.evaluate
+  console.log('Extracting cover images...');
+  const coverImages = await postPage.$$eval(coverImageSelector, imgs => imgs.map(img => img.src));
 
-    if (images.length > 0) {
-      try {
-        console.log(`Extracting and downloading images using selector: ${selector}`);
-        for (const image of images) {
-          const imageName = getButtonFileName(image.id) || fileName;
-          await downloadImageHelper(page, image.src, folder, postPage.url(), imageName);
-        }
-      } catch (error) {
-        const errorMessage = `Error processing images for post ${postLink}, selector: ${selector}: ${error.message}\n`;
-        console.error(errorMessage);
-        errorLogStream.write(errorMessage);
-      }
-    } else {
-      console.warn(`No images found for post ${postLink}, selector: ${selector}`);
+  // Process the cover images
+  for (let i = 0; i < coverImages.length; i++) {
+    const coverImageSrc = coverImages[i];
+    try {
+      console.log(`Extracting and downloading cover image ${i}...`);
+      const imageName = i === 0 ? 'cover.jpg' : `cover${i}.jpg`;
+      await downloadImageHelper(page, coverImageSrc, coverImageFolder, postPage.url(), imageName);
+    } catch (error) {
+      const errorMessage = `Error processing cover image ${i} for post ${postLink}: ${error.message}\n`;
+      console.error(errorMessage);
+      errorLogStream.write(errorMessage);
     }
   }
 
-  // Handle spoilerContainer images separately
+  // Handle other images or elements as needed
+  await downloadImages(page, postPage, 'div.button_code img', 'button_images');
+  await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img', 'donation_images');
   await downloadSpoilerImages(page, postPage, 'button_images');
 
   await postPage.close();
@@ -164,6 +161,31 @@ function getButtonFileName(buttonId) {
       return 'bd720.jpg';
     case 'movie':
       return 'movie.jpg';
+    case 'first_season_bd1080':
+      return 'first_season_bd1080.jpg';
+    case 'first_season_bd720':
+      return 'first_season_bd720.jpg';
+    case 'second_season_bd1080':
+      return 'second_season_bd1080.jpg';
+    case 'second_season_bd720':
+      return 'second_season_bd720.jpg';
+    case 'third_season_bd1080':
+      return 'third_season_bd1080.jpg';
+    case 'third_season_bd720':
+      return 'third_season_bd720.jpg';
+    case 'fourth_season_bd1080':
+      return 'fourth_season_bd1080.jpg';
+    case 'fourth_season_bd720':
+      return 'fourth_season_bd720.jpg';
+    case 'fifth_season_bd1080':
+      return 'fifth_season_bd1080.jpg';
+    case 'fifth_season_bd720':
+      return 'fifth_season_bd720.jpg';
+    case 'sixth_season_bd1080':
+      return 'sixth_season_bd1080.jpg';
+    case 'sixth_season_bd720':
+      return 'sixth_season_bd720.jpg';
+    // Add more cases for new IDs as needed
     default:
       return null;
   }
@@ -213,5 +235,5 @@ async function downloadImageHelper(page, src, folder, postLink, fileName) {
   await fs.promises.writeFile(filePath, buffer);
 }
 
-// Run the script for all posts
+// Run the script for all posts starting from page 1
 scrapeAllPosts();
