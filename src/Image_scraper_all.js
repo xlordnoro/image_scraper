@@ -124,7 +124,7 @@ async function downloadMultipleCovers(page, coverImages, folder, postLink) {
     const coverImageSrc = coverImages[i];
     try {
       console.log(`Extracting and downloading cover image ${i + 1}...`);
-      const imageName = `cover${i + 1}.jpg`;
+      const imageName = i === 0 ? 'cover.jpg' : `cover${i}.jpg`;
       await downloadImageHelper(page, coverImageSrc, folder, postLink, imageName);
     } catch (error) {
       throw new Error(`Error processing cover image ${i + 1}: ${error.message}`);
