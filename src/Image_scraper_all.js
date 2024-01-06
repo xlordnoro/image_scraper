@@ -32,7 +32,7 @@ async function scrapeAllPosts() {
   while (hasNextPage) {
     // Navigate to the specified URL containing your posts
     console.log(`Navigating to posts page - Page ${currentPage}...`);
-    await page.goto(`https://hi10anime.com/archives/author/playcool/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`https://hi10anime.com/archives/author/zash/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
     console.log('Waiting for posts page to load...');
@@ -81,22 +81,31 @@ async function processPost(browser, page, postLink, errorLogStream) {
 
   console.log('Waiting for post page to load...');
 
-  const coverImageSelector = 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img';
+  const coverImageSelector = 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img, img.animeImage, img.coverImage, img.mainImage, a.postMakerAShowMovie';
   const coverImageFolder = 'cover_images';
 
   // Extract cover images using page.evaluate
   console.log('Extracting cover images...');
   const coverImages = await postPage.$$eval(coverImageSelector, imgs => imgs.map(img => img.src));
 
-  // Process the cover images
-  for (let i = 0; i < coverImages.length; i++) {
-    const coverImageSrc = coverImages[i];
+  if (coverImages.length === 1) {
+    // If only one cover image is present, use the existing downloadImageHelper function
+    const coverImageSrc = coverImages[0];
     try {
-      console.log(`Extracting and downloading cover image ${i}...`);
-      const imageName = i === 0 ? 'cover.jpg' : `cover${i}.jpg`;
-      await downloadImageHelper(page, coverImageSrc, coverImageFolder, postPage.url(), imageName);
+      console.log('Extracting and downloading cover image...');
+      await downloadImageHelper(page, coverImageSrc, coverImageFolder, postPage.url(), 'cover.jpg');
     } catch (error) {
-      const errorMessage = `Error processing cover image ${i} for post ${postLink}: ${error.message}\n`;
+      const errorMessage = `Error processing cover image for post ${postLink}: ${error.message}\n`;
+      console.error(errorMessage);
+      errorLogStream.write(errorMessage);
+    }
+  } else if (coverImages.length > 1) {
+    // If more than one cover image is present, use the new function downloadMultipleCovers
+    try {
+      console.log(`Extracting and downloading ${coverImages.length} cover images...`);
+      await downloadMultipleCovers(page, coverImages, coverImageFolder, postPage.url());
+    } catch (error) {
+      const errorMessage = `Error processing cover images for post ${postLink}: ${error.message}\n`;
       console.error(errorMessage);
       errorLogStream.write(errorMessage);
     }
@@ -104,10 +113,23 @@ async function processPost(browser, page, postLink, errorLogStream) {
 
   // Handle other images or elements as needed
   await downloadImages(page, postPage, 'div.button_code img', 'button_images');
-  await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img', 'donation_images');
+  await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img, a.pleaseImage, a.postMakerADonate', 'donation_images');
   await downloadSpoilerImages(page, postPage, 'button_images');
 
   await postPage.close();
+}
+
+async function downloadMultipleCovers(page, coverImages, folder, postLink) {
+  for (let i = 0; i < coverImages.length; i++) {
+    const coverImageSrc = coverImages[i];
+    try {
+      console.log(`Extracting and downloading cover image ${i + 1}...`);
+      const imageName = `cover${i + 1}.jpg`;
+      await downloadImageHelper(page, coverImageSrc, folder, postLink, imageName);
+    } catch (error) {
+      throw new Error(`Error processing cover image ${i + 1}: ${error.message}`);
+    }
+  }
 }
 
 async function downloadImage(page, postPage, selector, folder) {
@@ -119,6 +141,7 @@ async function downloadImage(page, postPage, selector, folder) {
 
 async function downloadImages(page, postPage, selector, folder) {
   const images = await postPage.$$eval(selector, imgs => imgs.map(img => ({ src: img.src, id: img.parentElement.id })));
+  console.log('Extracting and downloading button images...');
   for (const image of images) {
     const fileName = getButtonFileName(image.id);
     await downloadImageHelper(page, image.src, folder, postPage.url(), fileName);

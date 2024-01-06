@@ -1,6 +1,6 @@
 {
   "name": "donation_banner_scraper",
-  "version": "1.1.0",
+  "version": "1.4.0",
   "description": "image_scrapper",
   "main": "src/Image_scraper_xlordnoro_version.js",
   "scripts": {
