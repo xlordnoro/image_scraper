@@ -10,4 +10,4 @@ December 26, 2023 - v1.3 - Upgraded the Image_scraper_all.js to include more but
 
 January 06, 2024 - v1.4 - Upgraded the Image_scraper_all.js to include more cover and donation image selectors from older posts on the site. Modified how the script determines whether it needs to index cover images or not since v1.3 can run into issues with older posts even if the correct classes are present in the post.
 
-January 06, 2024 - v1.4.1 - Fixed a small regression with the cover image indexing as the new version would start naming the first file as cover1 instead of cover when detecting multiple cover images inside a post.
+January 06, 2024 - v1.4.1-2 - Fixed a small regression with the cover image indexing as the new version would start naming the first file as cover1 instead of cover when detecting multiple cover images inside a post. **Forgot to add the new donation image selectors to the mass_add_automation_all.js.**

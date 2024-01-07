@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const constants = require('./constants');
 
 const wordpressURL = 'https://hi10anime.com/wp-login.php';
-const authorURL = 'https://hi10anime.com/archives/author/zangetu'; // Replace with the actual author URL
+const authorURL = 'https://hi10anime.com/archives/author/zash'; // Replace with the actual author URL
 
 async function processPost(page, postLink) {
   const newPage = await page.browser().newPage(); // Open a new tab
@@ -30,14 +30,14 @@ async function processPost(page, postLink) {
     } else {
       const donateImageExists = await newPage.evaluate((selector) => {
         const textarea = document.querySelector(selector);
-        return textarea && textarea.value.includes('<a class="donateImage">, <p class="donation">');
+        return textarea && textarea.value.includes('<a class="donateImage">, <p class="donation">, <a class="pleaseImage">, <a class="postMakerADonate">');
       }, textAreaSelector);
 
       if (donateImageExists) {
         await newPage.evaluate((selector) => {
           const textarea = document.querySelector(selector);
           const currentContent = textarea.value;
-          const indexOfDonateImage = currentContent.indexOf('<a class="donateImage">, <p class="donation">');
+          const indexOfDonateImage = currentContent.indexOf('<a class="donateImage">, <p class="donation">, <a class="pleaseImage">, <a class="postMakerADonate">');
           const updatedContent = currentContent.slice(0, indexOfDonateImage + 21) + '\n\n' + currentContent.slice(indexOfDonateImage + 21);
           textarea.value = updatedContent;
         }, textAreaSelector);
