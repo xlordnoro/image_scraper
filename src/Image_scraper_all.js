@@ -81,7 +81,7 @@ async function processPost(browser, page, postLink, errorLogStream) {
 
   console.log('Waiting for post page to load...');
 
-  const coverImageSelector = 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img, img.animeImage, img.coverImage, img.mainImage, a.postMakerAShowMovie';
+  const coverImageSelector = 'a.coverImage img, a.coverImage1 img, img.aligncenter, p.image img, img.animeImage, img.coverImage, img.mainImage, a.postMakerAShowMovie img';
   const coverImageFolder = 'cover_images';
 
   // Extract cover images using page.evaluate
@@ -113,7 +113,7 @@ async function processPost(browser, page, postLink, errorLogStream) {
 
   // Handle other images or elements as needed
   await downloadImages(page, postPage, 'div.button_code img', 'button_images');
-  await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img, a.pleaseImage, a.postMakerADonate', 'donation_images');
+  await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img, a.pleaseImage img, a.postMakerADonate img', 'donation_images');
   await downloadSpoilerImages(page, postPage, 'button_images');
 
   await postPage.close();
