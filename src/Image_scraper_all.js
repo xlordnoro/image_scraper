@@ -23,21 +23,22 @@ async function scrapeAllPosts() {
 
   // Start from the specified page
   let currentPage = 1;
-  let hasNextPage = true;
 
   // Create an error log file
   const errorLogPath = path.join(__dirname, 'error_log.txt');
   const errorLogStream = fs.createWriteStream(errorLogPath, { flags: 'a' });
 
-  while (hasNextPage) {
+  let hasMorePages = true;
+
+  while (hasMorePages) {
     // Navigate to the specified URL containing your posts
     console.log(`Navigating to posts page - Page ${currentPage}...`);
-    await page.goto(`https://hi10anime.com/archives/author/zash/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
-
+    await page.goto(`https://hi10anime.com/archives/author/a-kuma/page/${currentPage}`, { waitUntil: 'domcontentloaded' });
+  
     // Wait for the page to load
     console.log('Waiting for posts page to load...');
     await page.waitForSelector('h1.entry-title a');
-
+  
     // Extract post links using page.evaluate
     console.log('Extracting post links...');
     const postLinks = await page.evaluate(() => {
@@ -45,7 +46,12 @@ async function scrapeAllPosts() {
       document.querySelectorAll('h1.entry-title a').forEach(link => links.push(link.href));
       return links;
     });
-
+  
+    if (postLinks.length === 0) {
+      // If no more posts are detected, exit the loop
+      hasMorePages = false;
+    }
+  
     for (const postLink of postLinks) {
       try {
         console.log(`Processing post: ${postLink}`);
@@ -57,20 +63,23 @@ async function scrapeAllPosts() {
         errorLogStream.write(errorMessage);
       }
     }
-
-    // Check for the presence of the next page link
-    hasNextPage = await page.evaluate(() => {
-      const nextLink = document.querySelector('.next.page-numbers');
-      return !!nextLink;
-    });
-
-    // Move to the next page
-    if (hasNextPage) {
-      currentPage++;
+  
+    if (hasMorePages) {
+      // Click on the next page link using a more general selector
+      console.log('Clicking on the next page button...');
+      const nextPageButton = await page.$('a.next');
+      if (!nextPageButton) {
+        // If no element with class 'next' is found, exit the loop
+        hasMorePages = false;
+      } else {
+        await nextPageButton.click();
+        await page.waitForTimeout(2000); // Adding a delay to ensure the next page is loaded
+        currentPage++;
+      }
     }
   }
-
-  // Close the browser
+  
+  // Close the browser only when no more pages are detected
   await browser.close();
   console.log('Scraping completed.');
 }
@@ -112,7 +121,7 @@ async function processPost(browser, page, postLink, errorLogStream) {
   }
 
   // Handle other images or elements as needed
-  await downloadImages(page, postPage, 'div.button_code img', 'button_images');
+  await downloadImages(page, postPage, 'div.button_code img, div[style="margin-left: auto; margin-right: auto;"] img', 'button_images');
   await downloadDonationImages(page, postPage, 'a.donateImage img, p.donation img, a.pleaseImage img, a.postMakerADonate img', 'donation_images');
   await downloadSpoilerImages(page, postPage, 'button_images');
 
@@ -151,6 +160,8 @@ async function downloadImages(page, postPage, selector, folder) {
 async function downloadDonationImages(page, postPage, selector, folder) {
   const donationImages = await postPage.$$eval(selector, imgs => imgs.map(img => img.src));
   for (const donationImageSrc of donationImages) {
+    console.log('Extracting and downloading donation images...');
+    
     const fileName = getDonationFileName();
     await downloadImageHelper(page, donationImageSrc, folder, postPage.url(), fileName);
   }
@@ -184,6 +195,20 @@ function getButtonFileName(buttonId) {
       return 'bd720.jpg';
     case 'movie':
       return 'movie.jpg';
+    case 'S1':
+      return 'S1.jpg';
+    case 'S2':
+      return 'S2.jpg';
+    case 'S3':
+      return 'S3.jpg';
+    case 'S4':
+      return 'S4.jpg';
+    case 'S5':
+      return 'S5.jpg';
+    case '1080':
+      return 'bd1080.jpg';
+    case '720':
+      return 'bd720.jpg';
     case 'first_season_bd1080':
       return 'first_season_bd1080.jpg';
     case 'first_season_bd720':

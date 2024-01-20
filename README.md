@@ -15,3 +15,5 @@ January 06, 2024 - v1.4.1 - Fixed a small regression with the cover image indexi
 v1.4.2 - **Forgot to add the new donation image selectors to the mass_add_automation_all.js.**
 
 v1.4.3 - Added img to all the new selectors which explains why the cover and donations images weren't being scraped properly.
+
+v1.5 - I expanded the image_scrapper_all.js script to handle more selectors and case switches for renaming button images since Senri and some of the older staff used different methods than what is used presently on the site.
